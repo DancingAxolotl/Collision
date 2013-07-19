@@ -1,5 +1,7 @@
 package collision;
 
+import java.util.ArrayList;
+
 import org.lwjgl.LWJGLException;
 import org.lwjgl.Sys;
 import org.lwjgl.input.Keyboard;
@@ -11,12 +13,12 @@ import org.lwjgl.opengl.GL11;
 import collision.Physics.*;
 
 public class Collider {
-
-	private static Body poly = new Body();
-	private static Body polyTheSecond = new Body();
-	private long lastChange;
+	private Shape poly = new Body();
+	private ArrayList<Shape> shapes = new ArrayList<Shape>(16);
+	private long lastChange = 0;
 	private CollisionInfo colInfo;
-	private boolean secondSelected = false;
+	private int index = 0;
+	private int selectedIndex;
 
 	public void run() {
 
@@ -26,35 +28,13 @@ public class Collider {
 			GL11.glClear(GL11.GL_COLOR_BUFFER_BIT);
 
 			input();
-			
-			if (!secondSelected) {
-				colInfo = poly.collideInfo(polyTheSecond);
 
-				if (colInfo.overlap) {
-					poly.position.x = polyTheSecond.poly.xCenter;
-					poly.position.y = polyTheSecond.poly.yCenter;
-
-					poly.position.x = poly.poly.xCenter + colInfo.mtd.x;
-					poly.position.y = poly.poly.yCenter + colInfo.mtd.y;
-					poly.translateTo((int) poly.position.x, (int) poly.position.y);
-
-				}
-			} else {
-				colInfo = polyTheSecond.collideInfo(poly);
-
-				if (colInfo.overlap) {
-					polyTheSecond.position.x = poly.poly.xCenter;
-					polyTheSecond.position.y = poly.poly.yCenter;
-
-					polyTheSecond.position.x = polyTheSecond.poly.xCenter + colInfo.mtd.x;
-					polyTheSecond.position.y = polyTheSecond.poly.yCenter + colInfo.mtd.y;
-					polyTheSecond.translateTo((int) polyTheSecond.position.x, (int) polyTheSecond.position.y);
-
-				}
-			}
+			logic();
 
 			poly.render();
-			polyTheSecond.render();
+			for (Shape polyTheSecond : shapes) {
+				polyTheSecond.render();
+			}
 
 			Display.update();
 			Display.sync(60);
@@ -63,117 +43,86 @@ public class Collider {
 		System.exit(0);
 	}
 
+	private void logic() {
+		for (Shape polyTheSecond : shapes) {
+			colInfo = poly.collideInfo(polyTheSecond);
+
+			if (colInfo.isOverlap()) {
+				poly.setX(polyTheSecond.getX());
+				poly.setY(polyTheSecond.getY());
+
+				poly.setX(poly.getShape().getxCenter() + colInfo.getMtd().x);
+				poly.setY(poly.getShape().getyCenter() + colInfo.getMtd().y);
+				poly.translateTo((int) poly.getPosition().x, (int) poly.getPosition().y);
+
+			}
+		}
+
+	}
+
 	private void input() {
-		if (Keyboard.isKeyDown(Keyboard.KEY_ESCAPE)){
-			Display.destroy();
-			System.exit(0);
-		}
-		if (Keyboard.isKeyDown(Keyboard.KEY_W)) {
-			if (Sys.getTime() - lastChange >= 300) {
-				if (secondSelected) {
-					polyTheSecond.changeHeight(0.05);
-				} else {
-					poly.changeHeight(0.05);
-				}
-				lastChange = Sys.getTime();
+		if (Sys.getTime() - lastChange >= 300) {
+			if (Keyboard.isKeyDown(Keyboard.KEY_ESCAPE)) {
+				Display.destroy();
+				System.exit(0);
 			}
-		}
-		if (Keyboard.isKeyDown(Keyboard.KEY_S)) {
-			if (Sys.getTime() - lastChange >= 300) {
-				if (secondSelected) {
-					polyTheSecond.changeHeight(-0.05);
-				} else {
-					poly.changeHeight(-0.05);
-				}
-				lastChange = Sys.getTime();
+			if (Keyboard.isKeyDown(Keyboard.KEY_P)) {
+				shapes.add(index, new Body());
+				index++;
 			}
-		}
-		if (Keyboard.isKeyDown(Keyboard.KEY_A)) {
-			if (Sys.getTime() - lastChange >= 300) {
-				if (secondSelected) {
-					polyTheSecond.changeWidth(0.05);
-				} else {
-					poly.changeWidth(0.05);
-				}
-				lastChange = Sys.getTime();
+			if (Keyboard.isKeyDown(Keyboard.KEY_DELETE)) {
+
 			}
-		}
-		if (Keyboard.isKeyDown(Keyboard.KEY_D)) {
-			if (Sys.getTime() - lastChange >= 300) {
-				if (secondSelected) {
-					polyTheSecond.changeWidth(-0.05);
-				} else {
-					poly.changeWidth(-0.05);
-				}
-				lastChange = Sys.getTime();
+			if (Keyboard.isKeyDown(Keyboard.KEY_W)) {
+				poly.changeHeight(0.05);
 			}
-		}
-		if (Keyboard.isKeyDown(Keyboard.KEY_C)) {
-			if (Sys.getTime() - lastChange >= 300) {
-				if (secondSelected) {
-					polyTheSecond.setSize(1.0, 1.0);
-				} else {
-					poly.setSize(1.0, 1.0);
-				}
-				lastChange = Sys.getTime();
+			if (Keyboard.isKeyDown(Keyboard.KEY_S)) {
+				poly.changeHeight(-0.05);
 			}
-		}
-		if (Keyboard.isKeyDown(Keyboard.KEY_LEFT)) {
-			if (Sys.getTime() - lastChange >= 300) {
-				if (secondSelected) {
-					polyTheSecond.rotate(10);
-				} else {
-					poly.rotate(10);
-				}
-				lastChange = Sys.getTime();
+			if (Keyboard.isKeyDown(Keyboard.KEY_A)) {
+				poly.changeWidth(0.05);
 			}
-		}
-		if (Keyboard.isKeyDown(Keyboard.KEY_RIGHT)) {
-			if (Sys.getTime() - lastChange >= 300) {
-				if (secondSelected) {
-					polyTheSecond.rotate(-10);
-				} else {
-					poly.rotate(-10);
-				}
-				lastChange = Sys.getTime();
+			if (Keyboard.isKeyDown(Keyboard.KEY_D)) {
+				poly.changeWidth(-0.05);
 			}
-		}
-		if (Keyboard.isKeyDown(Keyboard.KEY_UP)) {
-			if (Sys.getTime() - lastChange >= 300) {
-				if (secondSelected) {
-					polyTheSecond.poly.changeCount(1);
-				} else {
-					poly.poly.changeCount(1);
-				}
-				lastChange = Sys.getTime();
+			if (Keyboard.isKeyDown(Keyboard.KEY_C)) {
+				poly.setSize(1.0, 1.0);
 			}
-		}
-		if (Keyboard.isKeyDown(Keyboard.KEY_DOWN)) {
-			if (Sys.getTime() - lastChange >= 300) {
-				if (secondSelected) {
-					polyTheSecond.poly.changeCount(-1);
-				} else {
-					poly.poly.changeCount(-1);
-				}
-				lastChange = Sys.getTime();
+			if (Keyboard.isKeyDown(Keyboard.KEY_LEFT)) {
+				poly.rotate(10);
 			}
+			if (Keyboard.isKeyDown(Keyboard.KEY_RIGHT)) {
+				poly.rotate(-10);
+			}
+			if (Keyboard.isKeyDown(Keyboard.KEY_UP)) {
+				poly.getShape().changeCount(1);
+			}
+			if (Keyboard.isKeyDown(Keyboard.KEY_DOWN)) {
+				poly.getShape().changeCount(-1);
+			}
+
+			if (Mouse.isButtonDown(0)) {
+
+				replace();
+
+				Mouse.setCursorPosition(poly.getShape().getxCenter(), poly.getShape().getyCenter());
+			}
+
+			lastChange = Sys.getTime();
+
 		}
-		if (!secondSelected) {
-			poly.translateTo(Mouse.getX(), Mouse.getY());
+
+		poly.translateTo(Mouse.getX(), Mouse.getY());
+	}
+
+	private void replace() {
+		if (selectedIndex >= shapes.size()) {
+			selectedIndex = 0;
 		} else {
-			polyTheSecond.translateTo(Mouse.getX(), Mouse.getY());
-		}
-		if (Mouse.isButtonDown(0)) {
-			if (Sys.getTime() - lastChange >= 300) {
-				if (!secondSelected) {
-					Mouse.setCursorPosition(polyTheSecond.poly.xCenter, polyTheSecond.poly.yCenter);
-					secondSelected = true;
-				} else {
-					Mouse.setCursorPosition(poly.poly.xCenter, poly.poly.yCenter);
-					secondSelected = false;
-				}
-				lastChange = Sys.getTime();
-			}
+			Shape tempBody = poly;
+			poly = shapes.get(selectedIndex);
+			shapes.set(selectedIndex, tempBody);
+			selectedIndex++;
 		}
 	}
 

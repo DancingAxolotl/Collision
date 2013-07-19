@@ -2,30 +2,51 @@ package collision.Physics;
 
 import java.util.Random;
 
-import org.lwjgl.opengl.GL11;
+import org.lwjgl.util.vector.Vector3f;
 
 public class Poly {
 
-	public int count = 0;
-	public Vector vertices[];
-	public double radius;
-	public float r, g, b;
-	public double width, height;
+	private int count = 0;
+	private Vector vertices[];
+	private double radius;
+	private float r, g, b;
+	private Vector3f color;
+	private double width, height;
+	private float min, max;
+	private int xCenter, yCenter;
+	double ang;
 
 	public Poly(int count, double radius, double width, double height) {
 		Random random = new Random();
 		this.radius = radius;
-		this.count = count;
+		this.setCount(count);
 		this.width = width;
 		this.height = height;
 		double a;
-		vertices = new Vector[this.count];
+		setVertices(new Vector[count]);
 
-		for (int i = 0; i < this.count; i++) {
-			a = 2 * Math.PI * i / this.count;
+		for (int i = 0; i < count; i++) {
+			a = 2 * Math.PI * i / count;
 			double tempX = Math.cos(a) * radius * width;
 			double tempY = Math.sin(a) * radius * height;
-			vertices[i] = new Vector(tempX, tempY);
+			getVertices()[i] = new Vector(tempX, tempY);
+		}
+		r = (float) random.nextDouble();
+		g = (float) random.nextDouble();
+		b = (float) random.nextDouble();
+		color = new Vector3f(r, g, b);
+	}
+
+	public Poly(int count, int[] x, int[] y) {
+		Random random = new Random();
+		this.radius = 0;
+		this.setCount(count);
+		this.width = 1;
+		this.height = 1;
+		setVertices(new Vector[count]);
+
+		for (int i = 0; i < count; i++) {
+			getVertices()[i] = new Vector(x[i], y[i]);
 		}
 		r = (float) random.nextDouble();
 		g = (float) random.nextDouble();
@@ -36,29 +57,29 @@ public class Poly {
 		this.width = width;
 		this.height = height;
 		double a;
-		vertices = new Vector[this.count];
+		setVertices(new Vector[count]);
 
-		for (int i = 0; i < this.count; i++) {
-			a = 2 * Math.PI * i / this.count;
+		for (int i = 0; i < count; i++) {
+			a = 2 * Math.PI * i / count;
 			double tempX = Math.cos(a) * radius * width;
 			double tempY = Math.sin(a) * radius * height;
-			vertices[i] = new Vector(tempX, tempY);
+			getVertices()[i] = new Vector(tempX, tempY);
 		}
-		
-		rotate(lastRotation);
+
+		findCenter();
 	}
 
 	public void changeCount(int change) {
-		if ((count + change) >= 3) {
-			count += change;
+		if ((getCount() + change) >= 3) {
+			setCount(getCount() + change);
 			double a;
-			vertices = new Vector[this.count];
+			setVertices(new Vector[count]);
 
-			for (int i = 0; i < this.count; i++) {
-				a = 2 * Math.PI * i / this.count;
+			for (int i = 0; i < count; i++) {
+				a = 2 * Math.PI * i / count;
 				double tempX = Math.cos(a) * radius * width;
 				double tempY = Math.sin(a) * radius * height;
-				vertices[i] = new Vector(tempX, tempY);
+				getVertices()[i] = new Vector(tempX, tempY);
 			}
 		}
 		findCenter();
@@ -70,198 +91,108 @@ public class Poly {
 	}
 
 	public void translate(int x, int y) {
-		for (int i = 0; i < count; i++) {
-			vertices[i].x += x;
-			vertices[i].y += y;
+		for (int i = 0; i < getCount(); i++) {
+			getVertices()[i].x += x;
+			getVertices()[i].y += y;
 		}
 		findCenter();
 	}
 
 	public void translateTo(int x5, int y5) {
-		for (int i = 0; i < count; i++) {
-			vertices[i].x = vertices[i].x - xCenter + x5;
-			vertices[i].y = vertices[i].y - yCenter + y5;
+		for (int i = 0; i < getCount(); i++) {
+			getVertices()[i].x = getVertices()[i].x - getxCenter() + x5;
+			getVertices()[i].y = getVertices()[i].y - getyCenter() + y5;
 		}
 		findCenter();
 	}
-
-	public int xCenter, yCenter;
 
 	public void findCenter() {
 
 		double area = 0;
 		int xSum = 0, ySum = 0;
 
-		for (int i = 0; i < count - 1; i++) {
-			area += vertices[i].x * vertices[i + 1].y - vertices[i + 1].x * vertices[i].y;
-			xSum += (vertices[i].x + vertices[i + 1].x) * (vertices[i].x * vertices[i + 1].y - vertices[i + 1].x * vertices[i].y);
-			ySum += (vertices[i].y + vertices[i + 1].y) * (vertices[i].x * vertices[i + 1].y - vertices[i + 1].x * vertices[i].y);
+		for (int i = 0; i < getCount() - 1; i++) {
+			area += getVertices()[i].x * getVertices()[i + 1].y - getVertices()[i + 1].x * getVertices()[i].y;
+			xSum += (getVertices()[i].x + getVertices()[i + 1].x) * (getVertices()[i].x * getVertices()[i + 1].y - getVertices()[i + 1].x * getVertices()[i].y);
+			ySum += (getVertices()[i].y + getVertices()[i + 1].y) * (getVertices()[i].x * getVertices()[i + 1].y - getVertices()[i + 1].x * getVertices()[i].y);
 		}
-		area += vertices[count - 1].x * vertices[0].y - vertices[0].x * vertices[count - 1].y;
-		xSum += (vertices[count - 1].x + vertices[0].x) * (vertices[count - 1].x * vertices[0].y - vertices[0].x * vertices[count - 1].y);
-		ySum += (vertices[count - 1].y + vertices[0].y) * (vertices[count - 1].x * vertices[0].y - vertices[0].x * vertices[count - 1].y);
+		area += getVertices()[getCount() - 1].x * getVertices()[0].y - getVertices()[0].x * getVertices()[getCount() - 1].y;
+		xSum += (getVertices()[getCount() - 1].x + getVertices()[0].x) * (getVertices()[getCount() - 1].x * getVertices()[0].y - getVertices()[0].x * getVertices()[getCount() - 1].y);
+		ySum += (getVertices()[getCount() - 1].y + getVertices()[0].y) * (getVertices()[getCount() - 1].x * getVertices()[0].y - getVertices()[0].x * getVertices()[getCount() - 1].y);
 
 		area = area / 2;
 
-		xCenter = (int) (xSum / (6 * area));
-		yCenter = (int) (ySum / (6 * area));
+		setxCenter((int) (xSum / (6 * area)));
+		setyCenter((int) (ySum / (6 * area)));
 	}
 
-	double ang;
-	private double lastRotation;
-
 	public void rotateTo(double currentAng, int x, int y) {
-		ang = Math.atan2(y - yCenter, x - xCenter);
+		ang = Math.atan2(y - getyCenter(), x - getxCenter());
 		rotate(ang - currentAng);
 	}
 
 	public void rotate(double rot) {
-		this.lastRotation = rot;
-		for (int i = 0; i < count; i++) {
-			double Xo = vertices[i].x;
-			vertices[i].x = xCenter + ((Xo - xCenter) * Math.cos(rot) - (vertices[i].y - yCenter) * Math.sin(rot));
-			vertices[i].y = yCenter + ((Xo - xCenter) * Math.sin(rot) + (vertices[i].y - yCenter) * Math.cos(rot));
+		for (int i = 0; i < getCount(); i++) {
+			double Xo = getVertices()[i].x;
+			getVertices()[i].x = getxCenter() + ((Xo - getxCenter()) * Math.cos(rot) - (getVertices()[i].y - getyCenter()) * Math.sin(rot));
+			getVertices()[i].y = getyCenter() + ((Xo - getxCenter()) * Math.sin(rot) + (getVertices()[i].y - getyCenter()) * Math.cos(rot));
 		}
 	}
 
-	public void render() {
-		GL11.glColor3f(r, g, b);
-
-		GL11.glBegin(GL11.GL_TRIANGLE_FAN);
-
-		for (int i = 0; i < count; i++) {
-			GL11.glVertex2d((vertices[i].x), (vertices[i].y));
-		}
-
-		GL11.glEnd();
+	public float getMin() {
+		return min;
 	}
 
-	private CollisionInfo info = new CollisionInfo();
-
-	public CollisionInfo collideInfo(Poly poly) {
-
-		info.LengthSquared = -1;
-		for (int j = count - 1, i = 0; i < count; j = i, i++) {
-			Vector v0 = vertices[j];
-			Vector v1 = vertices[i];
-
-			Vector edge = new Vector(0, 0);
-			edge.x = v1.x - v0.x;
-			edge.y = v1.y - v0.y;
-			this.axis = edge.perp();
-
-			if (separatedByAxis(axis, poly)) {
-				info.overlap = false;
-				return info;
-			}
-		}
-
-		for (int j = poly.count - 1, i = 0; i < poly.count; j = i, i++) {
-			Vector v0 = poly.vertices[j];
-			Vector v1 = poly.vertices[i];
-
-			Vector edge2 = new Vector(0, 0);
-			edge2.x = v1.x - v0.x;
-			edge2.y = v1.y - v0.y;
-
-			this.axis = edge2.perp();
-
-			if (separatedByAxis(axis, poly)) {
-				info.overlap = false;
-				return info;
-			}
-		}
-		info.overlap = true;
-		return info;
+	public void setMin(float min) {
+		this.min = min;
 	}
 
-	private Vector axis = new Vector(0, 0);
-
-	public boolean collide(Poly poly) {
-		for (int j = count - 1, i = 0; i < count; j = i, i++) {
-			Vector v0 = vertices[j];
-			Vector v1 = vertices[i];
-
-			Vector edge = new Vector(0, 0);
-			edge.x = v1.x - v0.x;
-			edge.y = v1.y - v0.y;
-
-			axis = edge.perp();
-
-			if (separatedByAxis(axis, poly))
-				return false;
-		}
-
-		for (int j = poly.count - 1, i = 0; i < poly.count; j = i, i++) {
-			Vector v0 = poly.vertices[j];
-			Vector v1 = poly.vertices[i];
-
-			Vector edge2 = new Vector(0, 0);
-			edge2.x = v1.x - v0.x;
-			edge2.y = v1.y - v0.y;
-
-			axis = edge2.perp();
-
-			if (separatedByAxis(axis, poly))
-				return false;
-		}
-		return true;
+	public float getMax() {
+		return max;
 	}
 
-	private float min, max;
-
-	public void calculateInterval(Vector axis2) {
-		max = (float) vertices[0].dot(axis2);
-		min = (float) vertices[0].dot(axis2);
-
-		for (int i = 1; i < count; i++) {
-			float d = (float) vertices[i].dot(axis2);
-			if (d < min)
-				min = d;
-			else if (d > max)
-				max = d;
-		}
+	public void setMax(float max) {
+		this.max = max;
 	}
 
-	public boolean intervalsSeparated(float mina, float maxa, float minb, float maxb) {
-		return (mina > maxb) || (minb > maxa);
+	public int getCount() {
+		return count;
 	}
 
-	private float mina, maxa;
-	private float minb, maxb;
+	public void setCount(int count) {
+		this.count = count;
+	}
 
-	public boolean separatedByAxis(Vector axis3, Poly poly) {
-		calculateInterval(axis3);
-		mina = min;
-		maxa = max;
-		poly.calculateInterval(axis3);
-		minb = poly.min;
-		maxb = poly.max;
+	public Vector[] getVertices() {
+		return vertices;
+	}
 
-		double d0 = maxb - mina;
-		double d1 = minb - maxa;
+	public void setVertices(Vector vertices[]) {
+		this.vertices = vertices;
+	}
 
-		if (d0 < 0.0 || d1 > 0.0) {
-			return true;
-		}
+	public int getxCenter() {
+		return xCenter;
+	}
 
-		double overlap = (d0 < -d1) ? d0 : d1;
+	public void setxCenter(int xCenter) {
+		this.xCenter = xCenter;
+	}
 
-		double axis_length_squared = axis3.dot(axis3);
-		assert (axis_length_squared > 0.00001);
+	public int getyCenter() {
+		return yCenter;
+	}
 
-		Vector sep = new Vector(0, 0);
-		sep.x = axis3.x * (overlap / axis_length_squared);
-		sep.y = axis3.y * (overlap / axis_length_squared);
+	public void setyCenter(int yCenter) {
+		this.yCenter = yCenter;
+	}
 
-		double sep_length_squared = sep.dot(sep);
+	public Vector3f getColor() {
+		return color;
+	}
 
-		if (sep_length_squared < info.LengthSquared || info.LengthSquared < 0.0) {
-			info.LengthSquared = sep_length_squared;
-			info.mtd = sep;
-		}
-		return false;
-
+	public void setColor(Vector3f color) {
+		this.color = color;
 	}
 
 }

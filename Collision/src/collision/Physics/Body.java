@@ -2,80 +2,92 @@ package collision.Physics;
 
 import java.util.Random;
 
-public class Body {
-	public Poly poly;
-	public Vector position = new Vector(0, 0);;
+import org.lwjgl.opengl.GL11;
 
-	public double orientation;
-	public double width, height;
+public class Body implements Shape {
+	private Poly poly;
+	private Vector position = new Vector(0, 0);
+	private Algorithm1 algorithm1 = new Algorithm1();
+
+	private double orientation;
+	private double width, height;
 
 	public Body(int x, int y, int count, int orientation, double width, double height) {
 		Random r = new Random();
 		this.width = width;
 		this.height = height;
-		position.x = x;
-		position.y = y;
+
+		getPosition().x = x;
+		getPosition().y = y;
 
 		orientation *= Math.PI;
 		float rad = r.nextFloat() * 300 * 0.1f + 300 * 0.1f;
 
 		poly = new Poly(count, rad, width, height);
 
-		poly.Transform(position, orientation);
+		poly.Transform(getPosition(), orientation);
 		poly.translate(0, 0);
+
+	}
+
+	public Body(int count, int[] x, int[] y, int xPos, int yPos) {
+		this.width = 1;
+		this.height = 1;
+		getPosition().x = xPos;
+		getPosition().y = yPos;
+
+		poly = new Poly(count, x, y);
 
 	}
 
 	public Body() {
 		Random r = new Random();
 
-		position.randomize(new Vector(800 * 0.8f, 600 * 0.8f), new Vector(800 * 0.05f, 600 * 0.05f));
+		getPosition().randomize(new Vector(800 * 0.8f, 600 * 0.8f), new Vector(800 * 0.05f, 600 * 0.05f));
 
 		orientation = r.nextDouble() * Math.PI;
 		int count = r.nextInt(3) + 3;
 		float rad = r.nextFloat() * 300 * 0.1f + 300 * 0.1f;
-		width = r.nextDouble();
-		height = r.nextDouble();
+		width = r.nextDouble() * 5;
+		height = r.nextDouble() * 5;
 
 		poly = new Poly(count, rad, width, height);
 
-		poly.Transform(position, orientation);
+		poly.Transform(getPosition(), orientation);
 		poly.translate(0, 0);
 
 	}
-	
-	public void setSize(double width, double height){
+
+	public void setSize(double width, double height) {
 		this.width = width;
 		this.height = height;
 		poly.changeSize(this.width, this.height);
 	}
-	
-	public void changeWidth(double width){
+
+	public void changeWidth(double width) {
 		this.width += width;
 		poly.changeSize(this.width, this.height);
 	}
-	
-	public void changeHeight(double height){
+
+	public void changeHeight(double height) {
 		this.height += height;
 		poly.changeSize(this.width, this.height);
 	}
 
-	public boolean collide(Body body) {
-		Poly otherPoly = body.poly;
-		return poly.collide(otherPoly);
+	public boolean collide(Shape other) {
+		return algorithm1.collide(getShape(), other.getShape());
 	}
 
-	public CollisionInfo collideInfo(Body other) {
-		Poly otherPoly = other.poly;
-		return poly.collideInfo(otherPoly);
+	public CollisionInfo collideInfo(Shape other) {
+		return algorithm1.collideInfo(getShape(), other.getShape());
 	}
 
 	public double getX() {
-		return position.x;
+		return poly.getxCenter();
 	}
 
 	public double getY() {
-		return position.y;
+		return poly.getyCenter();
 	}
 
 	public void Transform(Vector position2, double orientation2) {
@@ -100,7 +112,34 @@ public class Body {
 	}
 
 	public void render() {
-		poly.render();
+		GL11.glColor3f(poly.getColor().x, poly.getColor().y, poly.getColor().z);
+
+		GL11.glBegin(GL11.GL_TRIANGLE_FAN);
+
+		for (int i = 0; i < poly.getCount(); i++) {
+			GL11.glVertex2d((poly.getVertices()[i].x), (poly.getVertices()[i].y));
+		}
+
+		GL11.glEnd();
 	}
 
+	public Poly getShape() {
+		return poly;
+	}
+
+	public void setX(double x) {
+		getPosition().x = x;
+	}
+
+	public void setY(double y) {
+		getPosition().y = y;
+	}
+
+	public Vector getPosition() {
+		return position;
+	}
+
+	public void setPosition(Vector position) {
+		this.position = position;
+	}
 }
